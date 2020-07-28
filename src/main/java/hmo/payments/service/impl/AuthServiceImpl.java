@@ -12,6 +12,7 @@ import hmo.payments.service.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import static java.lang.String.format;
 
@@ -25,6 +26,8 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private AuthMapper authMapper;
 
+    @Override
+    @Transactional
     public AuthDto authorization(Long paymentId) {
         log.info("Simulating auth for payment [{}]", paymentId);
 
@@ -37,6 +40,8 @@ public class AuthServiceImpl implements AuthService {
         return authMapper.getAuthDto(auth);
     }
 
+    @Override
+    @Transactional
     public AuthDto cancelAuthorization(Long authId) {
         log.info("Simulating cancellation of auth [{}]", authId);
 
@@ -49,6 +54,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         auth.setAuthState(AuthState.CANCELLED);
-        return authMapper.getAuthDto(authRepository.save(auth));
+
+        return authMapper.getAuthDto(
+                authRepository.save(auth));
     }
 }

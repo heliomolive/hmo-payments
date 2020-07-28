@@ -64,7 +64,8 @@ public class PreAuthServiceImpl implements PreAuthService {
 
         preAuth.setPreAuthState(PreAuthState.CANCELLED);
 
-        return preAuthMapper.getPreAuthDto(preAuthRepository.save(preAuth));
+        return preAuthMapper.getPreAuthDto(
+                preAuthRepository.save(preAuth));
     }
 
 }
