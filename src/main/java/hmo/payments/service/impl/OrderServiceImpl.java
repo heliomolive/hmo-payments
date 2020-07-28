@@ -15,7 +15,6 @@ import hmo.payments.sm.PaymentStateMachineFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -47,15 +46,13 @@ public class OrderServiceImpl implements OrderService {
 
         // 2. execute pre-auth:
         PreAuthDto preAuthDto = preAuthService.preAuthorization(paymentDto.getPaymentId(), paymentDto.getAmount());
-        PaymentEvent paymentEvent = PreAuthState.SUCCESS.equals(preAuthDto.getPreAuthState()) ?
-                PaymentEvent.PRE_AUTH_APPROVE : PaymentEvent.PRE_AUTH_DECLINE;
 
         // 3. handle pre-auth result as an event:
         PaymentStateMachine sm = paymentStateMachineFactory.create(paymentDto.getPaymentId());
-        sm.sendEvent(paymentEvent);
+        sm.sendEvent(PreAuthState.SUCCESS.equals(preAuthDto.getPreAuthState()) ?
+                PaymentEvent.PRE_AUTH_APPROVE : PaymentEvent.PRE_AUTH_DECLINE);
 
-        paymentDto = paymentService.findPaymentByIdWithFetchDependencies(paymentDto.getPaymentId());
-        return paymentDto;
+        return paymentService.findPaymentByIdWithFetchDependencies(paymentDto.getPaymentId());
     }
 
     @Override
@@ -65,12 +62,11 @@ public class OrderServiceImpl implements OrderService {
 
         // 1. execute auth:
         AuthDto authDto = authService.authorization(paymentId);
-        PaymentEvent paymentEvent = AuthState.SUCCESS.equals(authDto.getAuthState()) ?
-                PaymentEvent.AUTH_APPROVE : PaymentEvent.AUTH_DECLINE;
 
         // 2. handle auth result as an event:
         PaymentStateMachine sm = paymentStateMachineFactory.create(paymentId);
-        sm.sendEvent(paymentEvent);
+        sm.sendEvent(AuthState.SUCCESS.equals(authDto.getAuthState()) ?
+                PaymentEvent.AUTH_APPROVE : PaymentEvent.AUTH_DECLINE);
 
         return paymentService.findPaymentByIdWithFetchDependencies(paymentId);
     }
