@@ -34,8 +34,8 @@ public class PaymentStateMachineConfig extends StateMachineConfigurerAdapter<Pay
         states.withStates()
                 .initial(PaymentState.NEW)
                 .states(EnumSet.allOf(PaymentState.class))
-                .end(PaymentState.AUTH_SUCCESS)
-                .end(PaymentState.PRE_AUTH_DECLINED);
+                .end(PaymentState.AUTH_SETTLED)
+                .end(PaymentState.CANCELLED);
     }
 
     @Override
@@ -63,7 +63,14 @@ public class PaymentStateMachineConfig extends StateMachineConfigurerAdapter<Pay
                 PaymentState.PRE_AUTH_DECLINED, PaymentEvent.PAYMENT_CANCEL, PaymentState.CANCELLED);
 
         configureStateTransition(transitions,
-                PaymentState.AUTH_DECLINED, PaymentEvent.AUTH_APPROVE, PaymentState.AUTH_SUCCESS);
+                PaymentState.AUTH_SUCCESS, PaymentEvent.AUTH_CANCEL, PaymentState.PRE_AUTH_SUCCESS);
+        configureStateTransition(transitions,
+                PaymentState.AUTH_SUCCESS, PaymentEvent.AUTH_SETTLEMENT, PaymentState.AUTH_SETTLED);
+        configureStateTransition(transitions,
+                PaymentState.AUTH_SUCCESS, PaymentEvent.PAYMENT_CANCEL, PaymentState.CANCELLED);
+
+        configureStateTransition(transitions,
+                PaymentState.AUTH_DECLINED, PaymentEvent.PAYMENT_CANCEL, PaymentState.CANCELLED);
     }
 
     @Override

@@ -6,6 +6,7 @@ public enum PaymentState {
     PRE_AUTH_DECLINED   ("Payment with pre-authorization declined or error"),
     AUTH_SUCCESS        ("Payment successfully authorized"),
     AUTH_DECLINED       ("Payment with authorization declined or error"),
+    AUTH_SETTLED        ("Payment authorized and settled"),
     CANCELLED           ("Payment cancelled");
 
     private String description;

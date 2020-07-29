@@ -6,9 +6,9 @@ import hmo.payments.domain.enums.PaymentEvent;
 import hmo.payments.domain.enums.PaymentState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.statemachine.StateContext;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component
 public class PreAuthApproveAction implements PaymentAction {
 
     @Autowired

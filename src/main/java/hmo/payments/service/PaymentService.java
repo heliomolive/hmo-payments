@@ -16,7 +16,13 @@ public interface PaymentService {
 
     void preAuthDeclined(Long paymentId);
 
+    void preAuthCancelled(Long paymentId);
+
     void authApproved(Long paymentId);
 
     void authDeclined(Long paymentId);
+
+    void authCancel(Long paymentId);
+
+    void paymentCancel(Long paymentId);
 }

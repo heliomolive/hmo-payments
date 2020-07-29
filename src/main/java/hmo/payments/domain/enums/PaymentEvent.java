@@ -7,5 +7,6 @@ public enum PaymentEvent {
     AUTH_APPROVE,
     AUTH_DECLINE,
     AUTH_CANCEL,
+    AUTH_SETTLEMENT,
     PAYMENT_CANCEL
 }

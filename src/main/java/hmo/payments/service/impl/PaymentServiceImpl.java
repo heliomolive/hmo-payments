@@ -67,6 +67,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
+    public void preAuthCancelled(Long paymentId) {
+        // just update payment state:
+        updatePayment(findPaymentEntity(paymentId, false), PaymentState.NEW);
+    }
+
+    @Override
+    @Transactional
     public void authApproved(Long paymentId) {
         // just update payment state:
         updatePayment(findPaymentEntity(paymentId, false), PaymentState.AUTH_SUCCESS);
@@ -77,6 +84,20 @@ public class PaymentServiceImpl implements PaymentService {
     public void authDeclined(Long paymentId) {
         // just update payment state:
         updatePayment(findPaymentEntity(paymentId, false), PaymentState.AUTH_DECLINED);
+    }
+
+    @Override
+    @Transactional
+    public void authCancel(Long paymentId) {
+        // just update payment state:
+        updatePayment(findPaymentEntity(paymentId, false), PaymentState.PRE_AUTH_SUCCESS);
+    }
+
+    @Override
+    @Transactional
+    public void paymentCancel(Long paymentId) {
+        // just update payment state:
+        updatePayment(findPaymentEntity(paymentId, false), PaymentState.CANCELLED);
     }
 
     private Payment findPaymentEntity(Long paymentId, boolean fetchDependence) {
