@@ -7,7 +7,6 @@ import hmo.payments.domain.enums.PaymentState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.statemachine.StateContext;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PreAuthApproveAction implements PaymentAction {
@@ -16,7 +15,6 @@ public class PreAuthApproveAction implements PaymentAction {
     private PaymentService paymentService;
 
     @Override
-    @Transactional
     public void execute(StateContext<PaymentState, PaymentEvent> context) {
         Long paymentId = getPaymentId(context.getMessage());
 

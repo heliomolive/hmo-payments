@@ -22,7 +22,7 @@ public class PaymentStateMachine {
 
     public PaymentState sendEvent(PaymentEvent paymentEvent) {
 
-        PaymentDto paymentDto = paymentService.findPaymentById(paymentId);
+        PaymentDto paymentDto = paymentService.findPaymentByIdWithFetchDependencies(paymentId);
         resetStateMachine(paymentDto.getState());
 
         sm.sendEvent(MessageBuilder

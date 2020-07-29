@@ -15,7 +15,6 @@ import hmo.payments.sm.PaymentStateMachineFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -36,7 +35,6 @@ public class OrderServiceImpl implements OrderService {
     private PaymentStateMachineFactory paymentStateMachineFactory;
 
     @Override
-    @Transactional
     public PaymentDto createAndPreAuthorizePaymentOrder(BigDecimal amount) {
 
         log.info("Starting creation of new payment for [{}]", amount);
@@ -56,7 +54,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional
     public PaymentDto authorizePaymentOrder(long paymentId) {
         log.info("Starting authorization of payment [{}]", paymentId);
 
@@ -77,7 +74,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional
     public PaymentDto cancelPreAuthorization(long preAuthId) {
         log.info("Canceling payment pre-authorization [{}]", preAuthId);
 
@@ -94,7 +90,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional
     public PaymentDto cancelAuthorization(long authId) {
         log.info("Canceling payment authorization [{}]", authId);
 

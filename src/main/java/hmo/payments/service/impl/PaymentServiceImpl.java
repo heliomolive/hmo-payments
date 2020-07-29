@@ -46,7 +46,6 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional
     public PaymentDto findPaymentByIdWithFetchDependencies(Long paymentId) {
         return paymentMapper.getPaymentDto(
                 findPaymentEntity(paymentId, true));
