@@ -8,11 +8,11 @@ public interface OrderService {
 
     PaymentDto createAndPreAuthorizePaymentOrder(BigDecimal amount);
 
-    PaymentDto authorizePaymentOrder(long paymentId);
+    PaymentDto authorizePaymentOrder(Long paymentId);
 
-    PaymentDto findPaymentOrder(long paymentId);
+    PaymentDto findPaymentOrder(Long paymentId);
 
-    PaymentDto cancelPreAuthorization(long preAuthId);
+    PaymentDto settlePaymentOrder(Long paymentId);
 
-    PaymentDto cancelAuthorization(long authId);
+    PaymentDto cancelPaymentOrder(Long paymentId);
 }

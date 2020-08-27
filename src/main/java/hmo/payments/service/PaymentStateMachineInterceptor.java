@@ -31,11 +31,7 @@ public class PaymentStateMachineInterceptor extends StateMachineInterceptorAdapt
                     isNull(message) ? "Message is null" : PAYMENT_ID_HEADER+" is null");
             return;
         }
-
-        long paymentId = (long) message.getHeaders().get(PAYMENT_ID_HEADER);
-        paymentRepository.findById(paymentId).ifPresent(payment -> {
-            payment.setState(state.getId());
-            paymentRepository.save(payment);
-        });
+        log.info("PreStateChange intercepted - state from [{}], state to [{}], event [{}]",
+                stateMachine.getState().getId(), state.getId(), message.getPayload());
     }
 }

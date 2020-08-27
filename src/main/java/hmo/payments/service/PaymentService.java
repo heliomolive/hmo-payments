@@ -12,17 +12,21 @@ public interface PaymentService {
 
     PaymentDto findPaymentByIdWithFetchDependencies(Long paymentId);
 
-    void preAuthApproved(Long paymentId);
+    PaymentDto preAuthRequested(Long paymentId);
 
-    void preAuthDeclined(Long paymentId);
+    PaymentDto preAuthApproved(Long paymentId);
 
-    void preAuthCancelled(Long paymentId);
+    PaymentDto preAuthDeclined(Long paymentId);
 
-    void authApproved(Long paymentId);
+    PaymentDto authRequested(Long paymentId);
 
-    void authDeclined(Long paymentId);
+    PaymentDto authApproved(Long paymentId);
 
-    void authCancel(Long paymentId);
+    PaymentDto authDeclined(Long paymentId);
 
-    void paymentCancel(Long paymentId);
+    PaymentDto paymentSettled(Long paymentId);
+
+    PaymentDto paymentCancelRequested(Long paymentId);
+
+    PaymentDto paymentCancelled(Long paymentId);
 }

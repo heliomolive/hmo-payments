@@ -47,57 +47,62 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentDto findPaymentByIdWithFetchDependencies(Long paymentId) {
-        return paymentMapper.getPaymentDto(
+        return paymentMapper.getPaymentDtoWithDependences(
                 findPaymentEntity(paymentId, true));
     }
 
     @Override
     @Transactional
-    public void preAuthApproved(Long paymentId) {
-        // just update payment state:
-        updatePayment(findPaymentEntity(paymentId, false), PaymentState.PRE_AUTH_SUCCESS);
+    public PaymentDto preAuthRequested(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.PRE_AUTH_REQUESTED);
     }
 
     @Override
     @Transactional
-    public void preAuthDeclined(Long paymentId) {
-        // just update payment state:
-        updatePayment(findPaymentEntity(paymentId, false), PaymentState.PRE_AUTH_DECLINED);
+    public PaymentDto preAuthApproved(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.PRE_AUTH_SUCCESS);
     }
 
     @Override
     @Transactional
-    public void preAuthCancelled(Long paymentId) {
-        // just update payment state:
-        updatePayment(findPaymentEntity(paymentId, false), PaymentState.NEW);
+    public PaymentDto preAuthDeclined(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.PRE_AUTH_DECLINED);
     }
 
     @Override
     @Transactional
-    public void authApproved(Long paymentId) {
-        // just update payment state:
-        updatePayment(findPaymentEntity(paymentId, false), PaymentState.AUTH_SUCCESS);
+    public PaymentDto authRequested(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.AUTH_REQUESTED);
     }
 
     @Override
     @Transactional
-    public void authDeclined(Long paymentId) {
-        // just update payment state:
-        updatePayment(findPaymentEntity(paymentId, false), PaymentState.AUTH_DECLINED);
+    public PaymentDto authApproved(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.AUTH_SUCCESS);
     }
 
     @Override
     @Transactional
-    public void authCancel(Long paymentId) {
-        // just update payment state:
-        updatePayment(findPaymentEntity(paymentId, false), PaymentState.PRE_AUTH_SUCCESS);
+    public PaymentDto authDeclined(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.AUTH_DECLINED);
     }
 
     @Override
     @Transactional
-    public void paymentCancel(Long paymentId) {
-        // just update payment state:
-        updatePayment(findPaymentEntity(paymentId, false), PaymentState.CANCELLED);
+    public PaymentDto paymentSettled(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.SETTLED);
+    }
+
+    @Override
+    @Transactional
+    public PaymentDto paymentCancelRequested(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.CANCEL_REQUESTED);
+    }
+
+    @Override
+    @Transactional
+    public PaymentDto paymentCancelled(Long paymentId) {
+        return updatePaymentStateAndReturnDto(paymentId, PaymentState.CANCELLED);
     }
 
     private Payment findPaymentEntity(Long paymentId, boolean fetchDependence) {
@@ -115,8 +120,10 @@ public class PaymentServiceImpl implements PaymentService {
         return payment;
     }
 
-    private Payment updatePayment(Payment payment, PaymentState newState) {
-        payment.setState(newState);
-        return paymentRepository.save(payment);
+    private PaymentDto updatePaymentStateAndReturnDto(Long paymentId, PaymentState paymentState) {
+        log.info("Updating payment [{}] to state [{}]", paymentId, paymentState);
+        Payment payment = findPaymentEntity(paymentId, false);
+        payment.setState(paymentState);
+        return paymentMapper.getPaymentDto(paymentRepository.save(payment));
     }
 }

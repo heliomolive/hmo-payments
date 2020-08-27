@@ -2,12 +2,18 @@ package hmo.payments.config;
 
 import hmo.payments.domain.enums.PaymentEvent;
 import hmo.payments.domain.enums.PaymentState;
-import hmo.payments.sm.action.PaymentAction;
-import hmo.payments.sm.action.PaymentActionFactory;
+import hmo.payments.sm.action.impl.AuthApproveAction;
+import hmo.payments.sm.action.impl.AuthDeclineAction;
+import hmo.payments.sm.action.impl.AuthRequestAction;
+import hmo.payments.sm.action.impl.PaymentSettlementAction;
+import hmo.payments.sm.action.impl.PaymentCancelAction;
+import hmo.payments.sm.action.impl.PaymentCancelRequestAction;
+import hmo.payments.sm.action.impl.PreAuthApproveAction;
+import hmo.payments.sm.action.impl.PreAuthDeclineAction;
+import hmo.payments.sm.action.impl.PreAuthRequestAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
@@ -16,9 +22,8 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 
-import java.util.EnumSet;
+import java.util.Set;
 
-import static java.lang.String.format;
 import static java.util.Objects.nonNull;
 
 @Slf4j
@@ -27,50 +32,92 @@ import static java.util.Objects.nonNull;
 public class PaymentStateMachineConfig extends StateMachineConfigurerAdapter<PaymentState, PaymentEvent> {
 
     @Autowired
-    private PaymentActionFactory paymentActionFactory;
+    private AuthRequestAction authRequestAction;
+
+    @Autowired
+    private AuthApproveAction authApproveAction;
+
+    @Autowired
+    private AuthDeclineAction authDeclineAction;
+
+    @Autowired
+    private PreAuthRequestAction preAuthRequestAction;
+
+    @Autowired
+    private PreAuthApproveAction preAuthApproveAction;
+
+    @Autowired
+    private PreAuthDeclineAction preAuthDeclineAction;
+
+    @Autowired
+    private PaymentCancelAction paymentCancelAction;
+
+    @Autowired
+    private PaymentCancelRequestAction paymentCancelRequestAction;
+
+    @Autowired
+    private PaymentSettlementAction paymentSettlementAction;
+
 
     @Override
     public void configure(StateMachineStateConfigurer<PaymentState, PaymentEvent> states) throws Exception {
-        states.withStates()
+        states.withStates() //First level states
                 .initial(PaymentState.NEW)
-                .states(EnumSet.allOf(PaymentState.class))
-                .end(PaymentState.AUTH_SETTLED)
-                .end(PaymentState.CANCELLED);
+                .end(PaymentState.SETTLED)
+                .end(PaymentState.CANCELLED)
+                .state(PaymentState.CANCEL_REQUESTED, ctx -> paymentCancelRequestAction.execute(ctx))
+                .state(PaymentState.CANCELLED, ctx -> paymentCancelAction.execute(ctx))
+                .state(PaymentState.SETTLED, ctx -> paymentSettlementAction.execute(ctx))
+                .states(Set.of(PaymentState.PAYMENT_REGISTERED, PaymentState.PAYMENT_IN_PROGRESS))
+
+                .and().withStates() //Second level states inside PAYMENT_REGISTERED
+                .parent(PaymentState.PAYMENT_REGISTERED)
+                .initial(PaymentState.PRE_AUTH_REQUESTED)
+                .state(PaymentState.PRE_AUTH_REQUESTED, ctx -> preAuthRequestAction.execute(ctx))
+                .state(PaymentState.PRE_AUTH_DECLINED, ctx -> preAuthDeclineAction.execute(ctx))
+
+                .and().withStates() //Second level states inside PAYMENT_IN_PROGRESS
+                .parent(PaymentState.PAYMENT_IN_PROGRESS)
+                .initial(PaymentState.PRE_AUTH_SUCCESS)
+                .state(PaymentState.PRE_AUTH_SUCCESS, ctx -> preAuthApproveAction.execute(ctx))
+                .state(PaymentState.AUTH_REQUESTED, ctx -> authRequestAction.execute(ctx))
+                .state(PaymentState.AUTH_SUCCESS, ctx -> authApproveAction.execute(ctx))
+                .state(PaymentState.AUTH_DECLINED, ctx -> authDeclineAction.execute(ctx))
+        ;
     }
 
     @Override
     public void configure(StateMachineTransitionConfigurer<PaymentState, PaymentEvent> transitions) throws Exception {
 
-        configureStateTransition(transitions,
-                PaymentState.NEW, PaymentEvent.PRE_AUTH_APPROVE, PaymentState.PRE_AUTH_SUCCESS);
-        configureStateTransition(transitions,
-                PaymentState.NEW, PaymentEvent.PRE_AUTH_DECLINE, PaymentState.PRE_AUTH_DECLINED);
-        configureStateTransition(transitions,
-                PaymentState.NEW, PaymentEvent.PAYMENT_CANCEL, PaymentState.CANCELLED);
+        transitions.withExternal().source(PaymentState.NEW).target(PaymentState.PAYMENT_REGISTERED)
+                .event(PaymentEvent.PRE_AUTH_REQUEST);
 
-        configureStateTransition(transitions,
-                PaymentState.PRE_AUTH_SUCCESS, PaymentEvent.AUTH_APPROVE, PaymentState.AUTH_SUCCESS);
-        configureStateTransition(transitions,
-                PaymentState.PRE_AUTH_SUCCESS, PaymentEvent.AUTH_DECLINE, PaymentState.AUTH_DECLINED);
-        configureStateTransition(transitions,
-                PaymentState.PRE_AUTH_SUCCESS, PaymentEvent.PRE_AUTH_CANCEL, PaymentState.NEW);
-        configureStateTransition(transitions,
-                PaymentState.PRE_AUTH_SUCCESS, PaymentEvent.PAYMENT_CANCEL, PaymentState.CANCELLED);
+        // Superstate PAYMENT_REGISTERED:
+        transitions.withExternal().source(PaymentState.PRE_AUTH_REQUESTED).target(PaymentState.PAYMENT_IN_PROGRESS)
+                .event(PaymentEvent.PRE_AUTH_APPROVE);
+        transitions.withExternal().source(PaymentState.PRE_AUTH_REQUESTED).target(PaymentState.PRE_AUTH_DECLINED)
+                .event(PaymentEvent.PRE_AUTH_DECLINE);
+        transitions.withExternal().source(PaymentState.PRE_AUTH_DECLINED).target(PaymentState.PRE_AUTH_REQUESTED)
+                .event(PaymentEvent.PRE_AUTH_REQUEST);
+        transitions.withExternal().source(PaymentState.PAYMENT_REGISTERED).target(PaymentState.CANCELLED)
+                .event(PaymentEvent.PAYMENT_CANCEL);
 
-        configureStateTransition(transitions,
-                PaymentState.PRE_AUTH_DECLINED, PaymentEvent.PRE_AUTH_APPROVE, PaymentState.PRE_AUTH_SUCCESS);
-        configureStateTransition(transitions,
-                PaymentState.PRE_AUTH_DECLINED, PaymentEvent.PAYMENT_CANCEL, PaymentState.CANCELLED);
+        // Superstate PAYMENT_IN_PROGRESS:
+        transitions.withExternal().source(PaymentState.PRE_AUTH_SUCCESS).target(PaymentState.AUTH_REQUESTED)
+                .event(PaymentEvent.AUTH_REQUEST);
+        transitions.withExternal().source(PaymentState.AUTH_REQUESTED).target(PaymentState.AUTH_SUCCESS)
+                .event(PaymentEvent.AUTH_APPROVE);
+        transitions.withExternal().source(PaymentState.AUTH_REQUESTED).target(PaymentState.AUTH_DECLINED)
+                .event(PaymentEvent.AUTH_DECLINE);
+        transitions.withExternal().source(PaymentState.AUTH_SUCCESS).target(PaymentState.SETTLED)
+                .event(PaymentEvent.PAYMENT_SETTLEMENT);
+        transitions.withExternal().source(PaymentState.AUTH_DECLINED).target(PaymentState.AUTH_REQUESTED)
+                .event(PaymentEvent.AUTH_REQUEST);
+        transitions.withExternal().source(PaymentState.PAYMENT_IN_PROGRESS).target(PaymentState.CANCEL_REQUESTED)
+                .event(PaymentEvent.PAYMENT_CANCEL);
 
-        configureStateTransition(transitions,
-                PaymentState.AUTH_SUCCESS, PaymentEvent.AUTH_CANCEL, PaymentState.PRE_AUTH_SUCCESS);
-        configureStateTransition(transitions,
-                PaymentState.AUTH_SUCCESS, PaymentEvent.AUTH_SETTLEMENT, PaymentState.AUTH_SETTLED);
-        configureStateTransition(transitions,
-                PaymentState.AUTH_SUCCESS, PaymentEvent.PAYMENT_CANCEL, PaymentState.CANCELLED);
-
-        configureStateTransition(transitions,
-                PaymentState.AUTH_DECLINED, PaymentEvent.PAYMENT_CANCEL, PaymentState.CANCELLED);
+        transitions.withExternal().source(PaymentState.CANCEL_REQUESTED).target(PaymentState.CANCELLED)
+                .event(PaymentEvent.PAYMENT_VOIDED);
     }
 
     @Override
@@ -78,33 +125,11 @@ public class PaymentStateMachineConfig extends StateMachineConfigurerAdapter<Pay
         StateMachineListenerAdapter<PaymentState, PaymentEvent> listenerAdapter = new StateMachineListenerAdapter<>(){
             @Override
             public void stateChanged(State<PaymentState, PaymentEvent> from, State<PaymentState, PaymentEvent> to) {
-                log.info(format("State changed from [%s] to [%s]",
-                        nonNull(from) ? from.getId() : null,
-                        nonNull(to) ? to.getId() : null));
+                if (nonNull(from)) { //Ignore state changes generated by State Machine starting (i.e, fromState is null)
+                    log.info("State changed from [{}] to [{}]", from.getId(), to.getId());
+                }
             }
         };
-
         config.withConfiguration().listener(listenerAdapter);
     }
-
-    private void configureStateTransition(StateMachineTransitionConfigurer<PaymentState, PaymentEvent> transitions,
-                                          PaymentState sourceState, PaymentEvent paymentEvent, PaymentState targetState)
-            throws Exception {
-        transitions.withExternal()
-                .source(sourceState)
-                .event(paymentEvent)
-                .target(targetState)
-                .action(actionFor(paymentEvent));
-    }
-
-    private Action<PaymentState, PaymentEvent> actionFor(PaymentEvent paymentEvent) {
-        return context -> {
-            PaymentAction paymentAction = paymentActionFactory.getPaymentAction(paymentEvent);
-            log.info("Starting action [{}] for event [{}]...",
-                    paymentAction.getClass().getSimpleName(), paymentEvent.name());
-            paymentAction.execute(context);
-
-        };
-    }
-
 }

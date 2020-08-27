@@ -2,6 +2,7 @@ package hmo.payments.controller;
 
 import hmo.payments.controller.request.AuthRequest;
 import hmo.payments.controller.request.PreAuthRequest;
+import hmo.payments.controller.request.SettlementRequest;
 import hmo.payments.controller.response.PaymentResponse;
 import hmo.payments.domain.dto.PaymentDto;
 import hmo.payments.domain.mapper.PaymentMapper;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,19 +55,21 @@ public class PaymentController {
         return paymentMapper.getPaymentResponse(paymentDto);
     }
 
-    @DeleteMapping("/v1/preauth/{preAuthId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public PaymentResponse cancelPreAuth(@PathVariable Long preAuthId) {
+    @PatchMapping("/v1/payment/{paymentId}")
+    @ResponseStatus(HttpStatus.OK)
+    public PaymentResponse settlePayment(@PathVariable Long paymentId,
+            @Valid @RequestBody SettlementRequest request) {
 
-        PaymentDto paymentDto = orderService.cancelPreAuthorization(preAuthId);
+        PaymentDto paymentDto = orderService.settlePaymentOrder(paymentId);
         return paymentMapper.getPaymentResponse(paymentDto);
     }
 
-    @DeleteMapping("/v1/auth/{authId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public PaymentResponse cancelAuth(@PathVariable Long authId) {
+    @DeleteMapping("/v1/payment/{paymentId}")
+    @ResponseStatus(HttpStatus.OK)
+    public PaymentResponse cancelPayment(@PathVariable Long paymentId) {
 
-        PaymentDto paymentDto = orderService.cancelAuthorization(authId);
+        PaymentDto paymentDto = orderService.cancelPaymentOrder(paymentId);
         return paymentMapper.getPaymentResponse(paymentDto);
     }
+
 }

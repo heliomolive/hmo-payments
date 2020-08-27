@@ -1,29 +1,28 @@
 package hmo.payments.sm;
 
-import hmo.payments.domain.dto.PaymentDto;
 import hmo.payments.domain.enums.PaymentEvent;
 import hmo.payments.domain.enums.PaymentState;
-import hmo.payments.service.PaymentService;
-import hmo.payments.service.PaymentStateMachineInterceptor;
-import lombok.AllArgsConstructor;
+import org.springframework.data.util.Pair;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
-import org.springframework.statemachine.support.DefaultStateMachineContext;
 
-@AllArgsConstructor
 public class PaymentStateMachine {
 
-    public static final String PAYMENT_ID_HEADER = "PaymentId";
+    public static final String PAYMENT_ID_HEADER = "paymentId";
+    public static final String AMOUNT = "amount";
 
     private StateMachine<PaymentState, PaymentEvent> sm;
     private Long paymentId;
-    private PaymentStateMachineInterceptor paymentStateMachineInterceptor;
-    private PaymentService paymentService;
 
-    public PaymentState sendEvent(PaymentEvent paymentEvent) {
+    public PaymentStateMachine(StateMachine<PaymentState, PaymentEvent> sm, Long paymentId) {
+        this.sm = sm;
+        this.paymentId = paymentId;
+    }
 
-        PaymentDto paymentDto = paymentService.findPaymentByIdWithFetchDependencies(paymentId);
-        resetStateMachine(paymentDto.getState());
+    public PaymentState sendEvent(PaymentEvent paymentEvent, Pair<Object, Object> ... params) {
+        for (Pair<Object, Object> p : params) {
+            sm.getExtendedState().getVariables().put(p.getFirst(), p.getSecond());
+        }
 
         sm.sendEvent(MessageBuilder
                 .withPayload(paymentEvent)
@@ -31,15 +30,5 @@ public class PaymentStateMachine {
                 .build());
 
         return sm.getState().getId();
-    }
-
-    private void resetStateMachine(PaymentState currentState) {
-        sm.stop();
-        sm.getStateMachineAccessor().doWithAllRegions(sma -> {
-            sma.addStateMachineInterceptor(paymentStateMachineInterceptor);
-            sma.resetStateMachine(new DefaultStateMachineContext<>(currentState, null,
-                    null, null));
-        });
-        sm.start();
     }
 }
