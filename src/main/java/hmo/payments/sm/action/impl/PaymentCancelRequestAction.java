@@ -40,7 +40,7 @@ public class PaymentCancelRequestAction implements PaymentAction {
         acquirerService.voidPayment(paymentId);
 
         // 3. Generate an event for payment voided:
-        PaymentStateMachine sm = paymentStateMachineFactory.create(paymentDto);
+        PaymentStateMachine sm = new PaymentStateMachine(context.getStateMachine(), paymentId);
         sm.sendEvent(PaymentEvent.PAYMENT_VOIDED);
     }
 }

@@ -5,6 +5,7 @@ import hmo.payments.domain.dto.PaymentDto;
 import hmo.payments.domain.enums.AuthState;
 import hmo.payments.domain.enums.PaymentEvent;
 import hmo.payments.domain.enums.PaymentState;
+import hmo.payments.repository.entity.Payment;
 import hmo.payments.service.AcquirerService;
 import hmo.payments.service.PaymentService;
 import hmo.payments.sm.PaymentStateMachine;
@@ -41,7 +42,7 @@ public class AuthRequestAction implements PaymentAction {
         AuthDto authDto = acquirerService.authorization(paymentId);
 
         // 3. Generate an event for auth result:
-        PaymentStateMachine sm = paymentStateMachineFactory.create(paymentDto);
+        PaymentStateMachine sm = new PaymentStateMachine(context.getStateMachine(), paymentId);
         sm.sendEvent(AuthState.SUCCESS.equals(authDto.getAuthState()) ?
                 PaymentEvent.AUTH_APPROVE : PaymentEvent.AUTH_DECLINE);
     }

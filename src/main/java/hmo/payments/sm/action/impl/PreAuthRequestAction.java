@@ -48,7 +48,7 @@ public class PreAuthRequestAction implements PaymentAction {
         PreAuthDto preAuthDto = acquirerService.preAuthorization(paymentId, amount);
 
         //3. Generate an event for pre-auth result:
-        PaymentStateMachine sm = paymentStateMachineFactory.create(paymentDto);
+        PaymentStateMachine sm = new PaymentStateMachine(context.getStateMachine(), paymentId);
         sm.sendEvent(Objects.equals(preAuthDto.getPreAuthState(), PreAuthState.SUCCESS) ?
                 PaymentEvent.PRE_AUTH_APPROVE : PaymentEvent.PRE_AUTH_DECLINE);
     }
